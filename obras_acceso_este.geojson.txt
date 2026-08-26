@@ -1,0 +1,45 @@
+JSON
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 1,
+        "nombre": "Trabajos en Pasarela Mercado Cooperativo Guaymallén",
+        "tipo": "obra",
+        "sentido": "Este a Ciudad",
+        "fecha_inicio": "2026-08-13",
+        "fecha_fin": "2026-08-20",
+        "video_url": "https://www.youtube.com/embed/VIDEO_ID"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-68.7985, -32.8981],
+          [-68.7920, -32.8950]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2,
+        "nombre": "Desvío por Colectora Norte / Pichincha",
+        "tipo": "desvio",
+        "sentido": "Este a Ciudad",
+        "fecha_inicio": "2026-08-13",
+        "fecha_fin": "2026-08-20",
+        "video_url": "https://www.youtube.com/embed/VIDEO_ID"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-68.7920, -32.8950],
+          [-68.7900, -32.8940],
+          [-68.7880, -32.8930]
+        ]
+      }
+    }
+  ]
+}

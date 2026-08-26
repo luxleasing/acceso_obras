@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Obras Acceso Este Mendoza - DPV</title>
+  <script src="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.js"></script>
+  <link href="https://unpkg.com/maplibre-gl@3.6.0/dist/maplibre-gl.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Librería Pannellum CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    :root {
+      --bg-dark: #0a0c10;
+      --bg-panel: #111318;
+      --bg-panel-hover: #1a1d24;
+      --border: #1e2128;
+      --text-primary: #e8e9ec;
+      --text-secondary: #8b8f98;
+      --accent: #5a9fd4;
+      --accent-hover: #7ab8e8;
+      --green: #4caf7c;
+      --orange: #e8913a;
+      --red: #d95757;
+      --blue: #5a8fd4;
+      --header-h: 48px;
+      --timeline-h: 120px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { height:100%; background:var(--bg-dark); color:var(--text-primary); font-family:'Inter','Segoe UI',sans-serif; overflow:hidden; }
+
+    /* ===== HEADER ===== */
+    #top-header {
+      height:var(--header-h);
+      background:#0d0f14;
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 22px; flex-shrink:0;
+    }
+    .header-left { display:flex; align-items:center; gap:12px; }
+    .logo-icon {
+      width:30px; height:30px; background:#3a3f4a;
+      border-radius:6px; display:flex; align-items:center; justify-content:center;
+      font-size:14px; color:#8b8f98;
+    }
+    .header-left h1 { font-size:0.95rem; font-weight:500; letter-spacing:1.2px; text-transform:uppercase; color:var(--text-primary); }
+    .header-right { display:flex; align-items:center; gap:14px; }
+    .status-badge {
+      display:flex; align-items:center; gap:8px;
+      background:#161920; border:1px solid var(--border);
+      padding:5px 14px; border-radius:20px; font-size:0.78rem;
+    }
+    .status-dot { width:7px; height:7px; background:var(--green); border-radius:50%; animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .header-date { font-size:0.8rem; color:var(--text-secondary); font-weight:400; }
+    .btn-actualizar {
+      background:#1a1d24; border:1px solid #2a2e38; color:var(--text-secondary);
+      padding:5px 12px; border-radius:6px; font-size:0.75rem; cursor:pointer;
+      display:flex; align-items:center; gap:6px; transition:all 0.2s;
+    }
+    .btn-actualizar:hover { background:#252a33; color:var(--text-primary); }
+
+    /* ===== LAYOUT CENTRAL ===== */
+    #main-wrap { display:flex; flex-direction:column; height:calc(100vh - var(--header-h)); }
+    #content-split { display:flex; flex:1; min-height:0; position:relative; overflow:hidden; }
+
+    /* MAPA (IZQUIERDA) */
+    #map-stage { flex:1; position:relative; min-width:300px; }
+    #map { width:100%; height:100%; }
+
+    /* SWIPE / RESIZER */
+    #sidebar-resizer {
+      width:8px; background:#0d0f14; border-left:1px solid var(--border); border-right:1px solid var(--border);
+      cursor:col-resize; display:flex; align-items:center; justify-content:center; z-index:20;
+      transition:background 0.2s; flex-shrink:0;
+    }
+    #sidebar-resizer:hover, #sidebar-resizer.dragging { background:var(--accent); }
+    #sidebar-resizer::after { content:''; width:2px; height:24px; background:var(--text-secondary); border-radius:1px; }
+
+    /* PANEL LATERAL DERECHO */
+    #sidebar-right {
+      width:420px; min-width:300px; max-width:70vw; background:var(--bg-dark);
+      display:flex; flex-direction:column; gap:10px; padding:10px;
+      overflow-y:auto; flex-shrink:0;
+    }
+
+    /* Tarjetas de Paneles */
+    .dash-card {
+      background:var(--bg-panel); border:1px solid var(--border); border-radius:10px;
+      display:flex; flex-direction:column; overflow:hidden; flex-shrink:0;
+    }
+    .dash-card-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:9px 12px; border-bottom:1px solid var(--border);
+      background:#0d0f14;
+    }
+    .dash-card-title { font-size:0.72rem; font-weight:500; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-secondary); }
+    .dash-card-body { padding:10px; position:relative; }
+
+    /* Panel Info */
+    .info-text { font-size:0.8rem; color:var(--text-secondary); line-height:1.45; }
+    .info-text strong { color:var(--text-primary); font-weight:500; }
+    .info-row { margin-bottom:5px; font-size:0.8rem; }
+    .sense-box {
+      background:#0a0d14; border-left:2px solid var(--blue);
+      padding:7px 9px; border-radius:0 5px 5px 0; margin-top:6px;
+    }
+    .sense-box.green { border-left-color:var(--green); }
+    .sense-title { font-size:0.75rem; font-weight:500; color:var(--accent); margin-bottom:2px; display:flex; align-items:center; gap:5px; }
+    .sense-title.green { color:var(--green); }
+    .sense-desc { font-size:0.75rem; color:var(--text-secondary); }
+
+    /* Calendario */
+    #calendar-wrap { margin-top:10px; }
+    .calendar-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+    .calendar-header h4 { font-size:0.72rem; text-transform:uppercase; color:var(--text-primary); letter-spacing:0.5px; font-weight:600; }
+    .cal-nav-btn { background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:0.75rem; padding:2px 6px; border-radius:4px; }
+    .cal-nav-btn:hover { background:var(--bg-panel-hover); color:var(--text-primary); }
+    .calendar-table { width:100%; border-collapse:collapse; font-size:0.68rem; text-align:center; }
+    .calendar-table th { color:#5a5e66; padding:3px; font-weight:500; font-size:0.62rem; }
+    .calendar-table td { padding:4px 2px; color:var(--text-secondary); border-radius:3px; cursor:pointer; }
+    .calendar-table td:hover { background:var(--bg-panel-hover); }
+    .calendar-table td.today { background:var(--accent); color:#fff; font-weight:600; }
+    .calendar-table td.other-month { color:#3a3f4a; cursor:default; }
+    .calendar-table td.selected { outline:1px solid var(--accent); }
+
+    /* Media boxes */
+    .btn-external-link {
+      background:#1a1d24; border:1px solid var(--border); color:var(--accent);
+      padding:2px 8px; border-radius:4px; font-size:0.7rem; text-decoration:none;
+      display:inline-flex; align-items:center; gap:4px; transition:all 0.2s;
+    }
+    .btn-external-link:hover { background:#252a33; color:var(--accent-hover); }
+    .header-frame-date { font-size:0.7rem; color:var(--accent); font-weight:500; font-variant-numeric:tabular-nums; }
+
+    .media-frame { 
+      position:relative; 
+      background:#000; 
+      overflow:hidden; 
+      width:100%; 
+      aspect-ratio: 16 / 9; 
+    }
+    .media-frame iframe { width:100%; height:100%; border:none; display:block; }
+
+    .frame-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:10; background:rgba(0,0,0,0.6); }
+    .frame-date-overlay {
+      position:absolute; top:10px; left:10px; z-index:15;
+      background:rgba(0,0,0,0.75); backdrop-filter:blur(4px);
+      color:var(--accent); padding:4px 10px; border-radius:6px;
+      font-size:0.72rem; font-weight:500; font-variant-numeric:tabular-nums;
+      pointer-events:none; border:1px solid rgba(255,255,255,0.1);
+    }
+    .compare-toggle-box {
+      position:absolute; bottom:10px; left:10px; z-index:15;
+      display:none; gap:6px; background:rgba(13,15,20,0.85); padding:4px; border-radius:6px; border:1px solid var(--border);
+    }
+    .btn-compare {
+      background:#1a1d24; border:1px solid var(--border); color:var(--text-secondary);
+      padding:3px 8px; border-radius:4px; font-size:0.68rem; cursor:pointer; transition:all 0.2s;
+    }
+    .btn-compare.active { background:var(--accent); color:#fff; font-weight:600; }
+
+    /* Controles mapa */
+    #basemap-toggle {
+      position:absolute; bottom:14px; right:14px; z-index:10;
+      background:rgba(13,15,20,0.92); border:1px solid var(--border);
+      border-radius:8px; padding:6px 10px; cursor:pointer;
+      color:var(--text-secondary); font-size:0.75rem;
+      display:flex; align-items:center; gap:6px; backdrop-filter:blur(6px);
+    }
+    #basemap-toggle:hover { color:var(--text-primary); }
+
+    #map-legend {
+      position:absolute; top:12px; left:12px; z-index:10;
+      background:rgba(13,15,20,0.95); backdrop-filter:blur(8px);
+      border:1px solid var(--border); border-radius:10px;
+      padding:14px 16px; width:240px; box-shadow:0 8px 24px rgba(0,0,0,0.4);
+    }
+    #map-legend h3 { font-size:0.72rem; text-transform:uppercase; color:var(--text-secondary); margin-bottom:10px; letter-spacing:1px; font-weight:500; }
+    .legend-row { display:flex; align-items:center; gap:10px; margin-bottom:7px; font-size:0.8rem; }
+    .legend-row:last-child { margin-bottom:0; }
+    .legend-line { width:18px; height:3px; border-radius:2px; flex-shrink:0; }
+    .legend-check { cursor:pointer; accent-color:var(--accent); }
+
+    /* ===== TIMELINE GANTT (FULL WIDTH INFERIOR) ===== */
+    #big-timeline {
+      height:var(--timeline-h); background:#0b0d12;
+      border-top:1px solid var(--border); display:flex; align-items:center;
+      padding:0 20px; gap:16px; flex-shrink:0; width:100%;
+    }
+    .tl-legend { width:200px; flex-shrink:0; }
+    .tl-legend-item { 
+      display:flex; align-items:center; gap:8px; margin-bottom:5px; font-size:0.72rem; color:var(--text-secondary);
+      cursor:pointer; padding:2px 4px; border-radius:4px; transition:background 0.15s;
+    }
+    .tl-legend-item:hover { background:var(--bg-panel-hover); }
+    .tl-legend-item:last-child { margin-bottom:0; }
+    .tl-legend-item.disabled { opacity:0.35; }
+    .tl-legend-item.selected { background:rgba(90, 159, 212, 0.15); outline:1px solid var(--accent); }
+    .tl-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .tl-check { cursor:pointer; accent-color:var(--accent); margin-right:2px; }
+    .tl-track-area { flex:1; position:relative; height:90px; display:flex; flex-direction:column; justify-content:center; }
+    .tl-header-axis { position:relative; height:22px; width:100%; border-bottom:1px solid #2a2e3d; display:flex; align-items:center; }
+    .tl-month-label { position:absolute; font-size:0.68rem; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:0.8px; top:0px; transform:translateX(-50%); }
+    .tl-month-line { position:absolute; top:0; bottom:-60px; width:2px; background:rgba(90, 159, 212, 0.4); z-index:2; pointer-events:none; }
+    .tl-tracks { position:relative; height:34px; margin-top:4px; width:100%; }
+    .tl-track-row { display:flex; align-items:center; height:10px; margin-bottom:2px; position:relative; }
+    .tl-bar { position:absolute; height:8px; border-radius:3px; opacity:0.85; cursor:pointer; transition:filter 0.2s, opacity 0.3s; }
+    .tl-bar:hover { filter:brightness(1.3); }
+    .tl-bar.inactive { opacity:0.15; filter:grayscale(0.9); }
+    .tl-bar.selected { box-shadow:0 0 0 2px #ffd166; opacity:1; filter:brightness(1.2); z-index:5; }
+
+    #timeline-slider-wrap { position:relative; width:100%; margin-top:6px; }
+    #timeline-slider {
+      -webkit-appearance:none; appearance:none; width:100%; height:6px;
+      background:#1a1d26; border-radius:3px; outline:none; cursor:pointer; border:1px solid #2a2e38;
+    }
+    #timeline-slider::-webkit-slider-thumb {
+      -webkit-appearance:none; appearance:none; width:16px; height:16px;
+      background:var(--accent); border-radius:50%; border:2px solid #fff;
+      box-shadow:0 0 10px rgba(90,159,212,0.8); cursor:pointer; transition:transform 0.1s;
+    }
+    #timeline-slider::-webkit-slider-thumb:hover { transform:scale(1.2); }
+    #timeline-slider::-moz-range-thumb { width:16px; height:16px; background:var(--accent); border-radius:50%; border:2px solid #fff; cursor:pointer; }
+
+    /* MapLibre Popup */
+    .maplibregl-popup-content { background:#ffffff !important; color:#111111 !important; border-radius:8px !important; padding:10px 14px !important; font-size:13px !important; box-shadow:0 4px 20px rgba(0,0,0,0.4) !important; }
+    .maplibregl-popup-tip { border-top-color:#ffffff !important; border-bottom-color:#ffffff !important; }
+
+    ::-webkit-scrollbar { width:5px; height:5px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:#2a2e38; border-radius:3px; }
+  </style>
+<base target="_blank">
+<base target="_blank">
+</head>
+<body>
+
+<header id="top-header">
+  <div class="header-left">
+    <div class="logo-icon"><i class="fas fa-road"></i></div>
+    <h1>Obras Acceso Este Mendoza</h1>
+  </div>
+  <div class="header-right">
+    <div class="status-badge">
+      <span class="status-dot"></span>
+      <span>En ejecución</span>
+    </div>
+    <span class="header-date" id="header-date"></span>
+    <button class="btn-actualizar" onclick="location.reload()">
+      <i class="fas fa-sync-alt"></i> Actualizar
+    </button>
+  </div>
+</header>
+
+<div id="main-wrap">
+  <div id="content-split">
+    <!-- MAPA -->
+    <div id="map-stage">
+      <div id="map"></div>
+      <button id="basemap-toggle" onclick="toggleBasemap()">
+        <i class="fas fa-layer-group"></i> <span id="bm-label">Satelital</span>
+      </button>
+
+      <div id="map-legend">
+        <h3>Leyenda de Tramos</h3>
+        <div id="legend-content"></div>
+      </div>
+    </div>
+
+    <!-- RESIZER / SWIPE BAR -->
+    <div id="sidebar-resizer"></div>
+
+    <!-- PANEL LATERAL DERECHO -->
+    <div id="sidebar-right">
+      <!-- 1° Panel: Street View -->
+      <div class="dash-card" id="col-streetview">
+        <div class="dash-card-header">
+          <span class="dash-card-title"><i class="fas fa-street-view" style="margin-right:5px;"></i>Google Street View</span>
+          <a id="btn-sv-external" href="#" target="_blank" class="btn-external-link" title="Abrir en ventana externa">
+            <i class="fas fa-external-link-alt"></i> Abrir
+          </a>
+        </div>
+        <div class="media-frame"><iframe id="streetview-player" src="about:blank"></iframe></div>
+      </div>
+
+      <!-- 2° Panel: Visor 360° con Pannellum -->
+      <div class="dash-card" id="col-frames">
+        <div class="dash-card-header">
+          <span class="dash-card-title"><i class="fas fa-video" style="margin-right:5px;"></i>Mapeo Móvil 360°</span>
+          <span class="header-frame-date" id="header-frame-date"></span>
+        </div>
+        <div class="media-frame" id="frame-container">
+          <div class="frame-date-overlay" id="frame-date-overlay">—</div>
+
+          <!-- Contenedor div Pannellum -->
+          <div id="panorama-viewer" style="width:100%; height:100%;"></div>
+
+          <div class="frame-overlay" id="frame-placeholder">
+            <div style="text-align:center; color:var(--text-secondary);">
+              <i class="fas fa-image" style="font-size:28px; margin-bottom:6px; opacity:0.35;"></i>
+              <p style="font-size:0.8rem;">Haz clic en un punto del recorrido</p>
+            </div>
+          </div>
+
+          <!-- Selector Antes/Después -->
+          <div class="compare-toggle-box" id="compare-box">
+            <button class="btn-compare active" id="btn-view-despues" onclick="switchPanoramaScene('despues')">Actual (Después)</button>
+            <button class="btn-compare" id="btn-view-antes" onclick="switchPanoramaScene('antes')">Anterior (Antes)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3° Panel: Informes del Tramo y Calendario -->
+      <div class="dash-card" id="col-info">
+        <div class="dash-card-header"><span class="dash-card-title">Información de circulación y desvíos</span></div>
+        <div class="dash-card-body">
+          <div id="info-content"><p class="info-text" style="font-style:italic; opacity:0.6;">Haz clic sobre una sección del mapa o del timeline para inspeccionar el tramo.</p></div>
+          <div id="calendar-wrap">
+            <div class="calendar-header">
+              <button class="cal-nav-btn" onclick="changeCalMonth(-1)"><i class="fas fa-chevron-left"></i></button>
+              <h4 id="cal-month-title">Agosto 2026</h4>
+              <button class="cal-nav-btn" onclick="changeCalMonth(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div id="calendar-root"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel D: Timeline Gantt -->
+  <div id="big-timeline">
+    <div class="tl-legend" id="tl-legend-root"></div>
+    <div class="tl-track-area">
+      <div class="tl-header-axis" id="tl-header-axis"></div>
+      <div class="tl-tracks" id="tl-tracks"></div>
+      <div id="timeline-slider-wrap"><input type="range" id="timeline-slider" min="0" max="152" value="20" step="1"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================
+// CONFIGURACION (Colores unificados con PALETA)
+// ============================================
+const CONFIG = {
+  obrasGeojson: './RN_7_acceso_DPV_4326.geojson',
+  puntos: [
+    { 
+      id: 'tramo_1', 
+      nombre: 'Recorrido 360° T1', 
+      geojson: './TRAMO_000891_001132/tramo_1.geojson', 
+      frames: './TRAMO_000891_001132/frames/', 
+      color: '#5a8fd4',
+      seccion: 'Seccion 1'
+    }, 
+    { 
+      id: 'tramo_3', 
+      nombre: 'Recorrido 360° T3', 
+      geojson: './TRAMO_000026_000642/tramo_3.geojson', 
+      frames: './TRAMO_000026_000642/frames/', 
+      color: '#e8913a',
+      seccion: 'Seccion 2 Fase 1'
+    },
+    { 
+      id: 'tramo_2', 
+      nombre: 'Recorrido 360° T2', 
+      geojson: './TRAMO_000000_000244/tramo_2.geojson', 
+      frames: './TRAMO_000000_000244/frames/', 
+      color: '#5a8fd4',
+      seccion: 'Seccion 2 Fase 2'
+    }
+  ]
+};
+
+const HOY = new Date();
+let currentCalView = new Date(2026, 7, 1);
+
+const TL_START = new Date(2026, 7, 1);   
+const TL_END   = new Date(2026, 11, 31);  
+const TL_DAYS  = Math.round((TL_END - TL_START) / 86400000);
+
+let TRAMO_COLORS = {};
+const PALETA = ['#5a8fd4','#4caf7c','#e8913a','#d95757','#9b7ed8','#5ac8d4'];
+
+// Estado global de visibilidad y selección
+let g_visibleSections = new Set();
+let g_selectedSection = null;
+
+// ============================================
+// RESIZER / SWIPE LATERAL
+// ============================================
+const resizer = document.getElementById('sidebar-resizer');
+const sidebar = document.getElementById('sidebar-right');
+let isResizing = false;
+
+resizer.addEventListener('mousedown', (e) => {
+  isResizing = true;
+  resizer.classList.add('dragging');
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!isResizing) return;
+  const containerWidth = document.getElementById('content-split').clientWidth;
+  let newSidebarWidth = containerWidth - e.clientX;
+  if (newSidebarWidth < 280) newSidebarWidth = 280;
+  if (newSidebarWidth > containerWidth * 0.7) newSidebarWidth = containerWidth * 0.7;
+  sidebar.style.width = `${newSidebarWidth}px`;
+  map.resize();
+});
+
+window.addEventListener('mouseup', () => {
+  if (isResizing) {
+    isResizing = false;
+    resizer.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    map.resize();
+  }
+});
+
+// ============================================
+// MAPA (Híbrido Satelital Base)
+// ============================================
+let currentBasemap = 'sat';
+
+const map = new maplibregl.Map({
+  container:'map',
+  style:{
+    version:8,
+    sources:{
+      'osm':{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'© OpenStreetMap contributors'},
+      'sat':{type:'raster',tiles:['https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'],tileSize:256,attribution:'© Google'}
+    },
+    layers:[
+      {id:'osm-layer',type:'raster',source:'osm',minzoom:0,maxzoom:20,layout:{visibility:'none'}},
+      {id:'sat-layer',type:'raster',source:'sat',minzoom:0,maxzoom:20,layout:{visibility:'visible'}}
+    ]
+  },
+  center:[-68.735,-32.899], zoom:12
+});
+
+function toggleBasemap(){
+  currentBasemap = currentBasemap==='osm'?'sat':'osm';
+  map.setLayoutProperty('osm-layer','visibility',currentBasemap==='osm'?'visible':'none');
+  map.setLayoutProperty('sat-layer','visibility',currentBasemap==='sat'?'visible':'none');
+  document.getElementById('bm-label').textContent = currentBasemap==='osm'?'OpenStreetMap':'Híbrido Satelital';
+}
+
+
+let geojsonObras = null;
+let loadedPuntos = {};
+let activePopup = null;
+let currentStreetViewCoords = [-68.735, -32.899];
+// ============================================
+// UTILIDADES Y FORMATO
+// ============================================
+function parseDMY(s){ if(!s) return null; const p=s.split('/'); if(p.length!==3) return null; return new Date(+p[2],+p[1]-1,+p[0]); }
+
+function fmtDT(v){
+  if(!v) return '—';
+  try { 
+    let d; 
+    if(typeof v==='string'){ 
+      if(v.includes('T')) d=new Date(v); 
+      else if(v.includes('/')){ 
+        const p=v.split(/[/\s:]+/); 
+        d=new Date(+p[2],+p[1]-1,+p[0],+(p[3]||0),+(p[4]||0),+(p[5]||0));
+      } else d=new Date(v);
+    } else d=new Date(v); 
+    if(isNaN(d.getTime())) return String(v); 
+    return d.toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  } catch(e){ return String(v); }
+}
+
+function norm(s){ return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
+
+function buildImagePath(cfg, imagenProp){
+  let img = imagenProp || '';
+  let base = cfg.frames || '';
+  base = base.replace(/\\/g,'/');
+  img = img.replace(/\\/g,'/');
+  const baseParts = base.split('/').filter(Boolean);
+  const imgParts = img.split('/').filter(Boolean);
+  if(baseParts.length>0 && imgParts.length>0 && baseParts[baseParts.length-1]===imgParts[0]){
+    img = imgParts.slice(1).join('/');
+  }
+  if(base.length>0 && !base.endsWith('/')) base += '/';
+  return base + img;
+}
+
+document.getElementById('header-date').textContent = HOY.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+// ============================================
+// INTEGRACION PANNELLUM 360°
+// ============================================
+let pannellumViewer = null;
+let activePointData = null;
+let pannellumResizeObserver = null;
+
+function load360Viewer(props, cfg) {
+  document.getElementById('frame-placeholder').style.display = 'none';
+
+  const fechaGPX = props.hora_gpx || props.fecha;
+  const imgPathDespues = buildImagePath(cfg, props.imagen);
+  const formattedDate = fmtDT(fechaGPX);
+
+  document.getElementById('frame-date-overlay').textContent = formattedDate;
+  document.getElementById('header-frame-date').textContent = formattedDate;
+
+  if (pannellumViewer) {
+    try { pannellumViewer.destroy(); } catch(e){}
+  }
+  if (pannellumResizeObserver) {
+    pannellumResizeObserver.disconnect();
+    pannellumResizeObserver = null;
+  }
+
+  const compareBox = document.getElementById('compare-box');
+  if (props.imagen_antes) {
+    const imgPathAntes = buildImagePath(cfg, props.imagen_antes);
+    compareBox.style.display = 'flex';
+    document.getElementById('btn-view-despues').classList.add('active');
+    document.getElementById('btn-view-antes').classList.remove('active');
+
+    pannellumViewer = pannellum.viewer('panorama-viewer', {
+      "default": { "firstScene": "despues", "sceneFadeDuration": 1000 },
+      "scenes": {
+        "despues": {
+          "type": "equirectangular",
+          "panorama": imgPathDespues,
+          "autoLoad": true,
+          "showControls": true
+        },
+        "antes": {
+          "type": "equirectangular",
+          "panorama": imgPathAntes,
+          "autoLoad": true,
+          "showControls": true
+        }
+      }
+    });
+  } else {
+    compareBox.style.display = 'none';
+    pannellumViewer = pannellum.viewer('panorama-viewer', {
+      "type": "equirectangular",
+      "panorama": imgPathDespues,
+      "autoLoad": true,
+      "showControls": true,
+      "compass": false
+    });
+  }
+
+  const viewerDiv = document.getElementById('panorama-viewer');
+  if (viewerDiv && 'ResizeObserver' in window) {
+    pannellumResizeObserver = new ResizeObserver(() => {
+      if (pannellumViewer && typeof pannellumViewer.resize === 'function') {
+        pannellumViewer.resize();
+      }
+    });
+    pannellumResizeObserver.observe(viewerDiv);
+  }
+}
+
+function switchPanoramaScene(sceneId) {
+  if (!pannellumViewer) return;
+  pannellumViewer.loadScene(sceneId);
+  if (sceneId === 'despues') {
+    document.getElementById('btn-view-despues').classList.add('active');
+    document.getElementById('btn-view-antes').classList.remove('active');
+  } else {
+    document.getElementById('btn-view-antes').classList.add('active');
+    document.getElementById('btn-view-despues').classList.remove('active');
+  }
+}
+
+// ============================================
+// PANEL INFO & STREET VIEW
+// ============================================
+function showObraInfo(props){
+  const sec=props['1_seccion']||'';
+  const tramo=props['1_tramo']||'N/D';
+  const long=props['1_longitud']||'';
+  const so=props['1_sentido_oeste']||'Circulación normal';
+  const se=props['1_sentido_este']||'Circulación normal';
+  const fi=props['1_fecha_inicio']||'N/D';
+  const ff=props['1_fecha_fin']||'N/D';
+
+  document.getElementById('info-content').innerHTML=`
+    <div class="info-row"><strong>Tramo:</strong> ${tramo} ${long}</div>
+    <div class="info-row"><strong>Sección:</strong> ${sec||'Sin obra activa'}</div>
+    <div class="info-row"><strong>Vigencia:</strong> ${fi} al ${ff}</div>
+    <div class="sense-box"><div class="sense-title"><i class="fas fa-arrow-left"></i> Sentido Oeste</div><div class="sense-desc">${so}</div></div>
+    <div class="sense-box green"><div class="sense-title green"><i class="fas fa-arrow-right"></i> Sentido Este</div><div class="sense-desc">${se}</div></div>
+  `;
+}
+
+function showPointInfo(props, coords, cfg){
+  activePointData = { props, coords, cfg };
+  const fechaGPX = props.hora_gpx || props.fecha;
+
+  document.getElementById('info-content').innerHTML=`
+    <div class="info-row"><strong>Punto:</strong> ${props.tramo_nombre||cfg.nombre}</div>
+    <div class="info-row"><strong>Frame:</strong> ${props.imagen}</div>
+    <div class="info-row"><strong>Hora GPX:</strong> <span style="color:var(--accent)">${fmtDT(fechaGPX)}</span></div>
+    <div class="info-row"><strong>Elevación:</strong> ${props.elevacion||'N/D'} m</div>
+  `;
+  loadStreetView(coords[0], coords[1]);
+  load360Viewer(props, cfg);
+}
+
+function loadStreetView(lng,lat){
+  currentStreetViewCoords = [lng, lat];
+  document.getElementById('streetview-player').src=`https://maps.google.com/maps?q=&layer=c&cbll=${lat},${lng}&cbp=11,0,0,0,0&output=svembed`;
+  document.getElementById('btn-sv-external').href = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
+}
+
+function clearInfo(){
+  document.getElementById('info-content').innerHTML='<p class="info-text" style="font-style:italic;opacity:0.6;">Haz clic sobre una sección del mapa o del timeline para inspeccionar el tramo.</p>';
+}
+
+// ============================================
+// CALENDARIO
+// ============================================
+let selectedCalendarDay = HOY.getDate();
+
+function changeCalMonth(delta){
+  currentCalView.setMonth(currentCalView.getMonth() + delta);
+  renderCalendar(currentCalView.getFullYear(), currentCalView.getMonth());
+}
+
+function renderCalendar(year, month){
+  const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('cal-month-title').textContent = `${monthNames[month]} ${year}`;
+
+  const names=['L','M','M','J','V','S','D'];
+  const first=new Date(year,month,1), startDay=(first.getDay()+6)%7, dim=new Date(year,month+1,0).getDate();
+  let h='<table class="calendar-table"><thead><tr>'+names.map(n=>`<th>${n}</th>`).join('')+'</tr></thead><tbody><tr>';
+  for(let i=0;i<startDay;i++)h+='<td class="other-month"></td>';
+
+  for(let d=1; d<=dim; d++){
+    const isToday = (d===HOY.getDate() && month===HOY.getMonth() && year===HOY.getFullYear());
+    const isSelected = (d===selectedCalendarDay && month===currentCalView.getMonth() && year===currentCalView.getFullYear());
+    const cls = (isToday?'today':'') + (isSelected?' selected':'');
+    h+=`<td class="${cls}" onclick="onCalendarClick(${year},${month},${d})">${d}</td>`;
+    if((startDay+d)%7===0 && d!==dim) h+='</tr><tr>';
+  }
+  const rem=(7-((startDay+dim)%7))%7;
+  for(let i=0;i<rem;i++)h+='<td class="other-month"></td>';
+  h+='</tr></tbody></table>';
+  document.getElementById('calendar-root').innerHTML=h;
+}
+
+function onCalendarClick(y,m,d){
+  selectedCalendarDay = d;
+  renderCalendar(y,m);
+  const clicked = new Date(y,m,d);
+  const dayIdx = Math.max(0, Math.min(TL_DAYS, Math.round((clicked - TL_START)/86400000)));
+  document.getElementById('timeline-slider').value = dayIdx;
+  applyFilters();
+}
+
+// ============================================
+// TIMELINE GANTT
+// ============================================
+let g_obrasList = [];
+
+function renderTimeline(obrasList){
+  g_obrasList = obrasList;
+
+  const months = [
+    { name: 'AGOSTO', start: new Date(2026, 7, 1) },
+    { name: 'SEPTIEMBRE', start: new Date(2026, 8, 1) },
+    { name: 'OCTUBRE', start: new Date(2026, 9, 1) },
+    { name: 'NOVIEMBRE', start: new Date(2026, 10, 1) },
+    { name: 'DICIEMBRE', start: new Date(2026, 11, 1) }
+  ];
+
+  const axis = document.getElementById('tl-header-axis');
+  axis.innerHTML = '';
+
+  months.forEach(m => {
+    const dayOffset = Math.round((m.start - TL_START) / 86400000);
+    const pct = (dayOffset / TL_DAYS) * 100;
+
+    const label = document.createElement('div');
+    label.className = 'tl-month-label';
+    label.style.left = `${pct}%`;
+    label.textContent = m.name;
+    axis.appendChild(label);
+
+    const line = document.createElement('div');
+    line.className = 'tl-month-line';
+    line.style.left = `${pct}%`;
+    axis.appendChild(line);
+  });
+
+  // Leyenda del timeline con checkboxes sincronizados
+  const legRoot = document.getElementById('tl-legend-root');
+  legRoot.innerHTML = obrasList.map((o,i) => `
+    <div class="tl-legend-item" id="tl-legend-item-${i}" onclick="onTimelineLegendClick(${i}, event)">
+      <input type="checkbox" class="tl-check" id="tl-chk-${i}" checked onchange="onTimelineCheckboxChange(${i})" onclick="event.stopPropagation()">
+      <div class="tl-dot" style="background:${o.color}"></div>
+      <span>${o.seccion}</span>
+    </div>
+  `).join('');
+
+  const total = TL_DAYS;
+  document.getElementById('tl-tracks').innerHTML = obrasList.map((o,i)=>{
+    const s=parseDMY(o.inicio), e=parseDMY(o.fin);
+    if(!s||!e) return `<div class="tl-track-row"></div>`;
+    const left=Math.max(0,Math.round((s-TL_START)/86400000)/total*100);
+    const width=Math.min(100-left,Math.round((e-s)/86400000)/total*100);
+    return `<div class="tl-track-row"><div class="tl-bar" id="tlbar-${i}" style="left:${left}%;width:${width}%;background:${o.color};" onclick="onTimelineBarClick(${i}, event)"></div></div>`;
+  }).join('');
+
+  const initialDay = Math.max(0, Math.min(TL_DAYS, Math.round((HOY - TL_START)/86400000)));
+  document.getElementById('timeline-slider').value = initialDay;
+  document.getElementById('timeline-slider').max = TL_DAYS;
+}
+
+// Click en la barra del timeline: selecciona y hace flyTo
+function onTimelineBarClick(idx, event) {
+  event.stopPropagation();
+  selectSectionByIdx(idx);
+  flyToObraByIdx(idx);
+}
+
+// Click en el item de leyenda del timeline: selecciona y hace flyTo
+function onTimelineLegendClick(idx, event) {
+  if (event.target.tagName === 'INPUT') return;
+  selectSectionByIdx(idx);
+  flyToObraByIdx(idx);
+}
+
+// Checkbox del timeline: sincroniza visibilidad
+function onTimelineCheckboxChange(idx) {
+  const chk = document.getElementById('tl-chk-' + idx);
+  const isChecked = chk.checked;
+
+  const mapChk = document.getElementById('chk-obra-' + idx);
+  if (mapChk) mapChk.checked = isChecked;
+
+  const item = document.getElementById('tl-legend-item-' + idx);
+  if (isChecked) {
+    item.classList.remove('disabled');
+  } else {
+    item.classList.add('disabled');
+  }
+
+  updateVisibilityState();
+}
+
+// Seleccionar una sección por índice
+function selectSectionByIdx(idx) {
+  const obrasList = extractObrasList();
+  if (!obrasList[idx]) return;
+
+  const secName = obrasList[idx].seccion;
+  g_selectedSection = secName;
+
+  obrasList.forEach((o, i) => {
+    const bar = document.getElementById('tlbar-' + i);
+    const item = document.getElementById('tl-legend-item-' + i);
+    if (bar) {
+      if (i === idx) {
+        bar.classList.add('selected');
+        item.classList.add('selected');
+      } else {
+        bar.classList.remove('selected');
+        item.classList.remove('selected');
+      }
+    }
+  });
+
+  map.setFilter('obras-highlight', ['==', ['get', '1_seccion'], secName || '']);
+}
+
+function updateTimelineBars(sel){
+  if(!geojsonObras) return;
+  const obrasList = extractObrasList();
+  obrasList.forEach((o,i)=>{
+    const s=parseDMY(o.inicio), e=parseDMY(o.fin);
+    const bar=document.getElementById('tlbar-'+i);
+    if(bar) bar.classList.toggle('inactive', !(sel>=s && sel<=e));
+  });
+}
+
+function extractObrasList(){
+  if(!geojsonObras || !geojsonObras.features) return [];
+  const seen = new Map();
+  geojsonObras.features.forEach(f=>{
+    const sec = f.properties['1_seccion'];
+    const ini = f.properties['1_fecha_inicio'];
+    const fin = f.properties['1_fecha_fin'];
+    if(sec && ini && fin && !seen.has(sec)){
+      const idx = seen.size;
+      seen.set(sec, {seccion:sec, inicio:ini, fin:fin, color:PALETA[idx % PALETA.length]});
+    }
+  });
+  return Array.from(seen.values());
+}
+
+function flyToObraByIdx(idx){
+  const list = extractObrasList();
+  if(!list[idx]) return;
+  flyToObra(list[idx].seccion);
+}
+
+function flyToObra(term){
+  if(!geojsonObras) return;
+  const f = geojsonObras.features.find(x=>norm(x.properties['1_seccion']||'').includes(norm(term))||norm(x.properties['1_tramo']||'').includes(norm(term)));
+  if(!f) return;
+  const c=f.geometry.coordinates, center=Array.isArray(c[0][0])?c[0][Math.floor(c[0].length/2)]:c[Math.floor(c.length/2)];
+  map.flyTo({center,zoom:14});
+  showObraInfo(f.properties);
+  loadStreetView(center[0],center[1]);
+  if(activePopup) activePopup.remove();
+  activePopup = new maplibregl.Popup({closeButton:true}).setLngLat(center).setHTML(`<div style="color:#111;font-weight:600">${f.properties['1_seccion']||''}</div><div style="color:#555;font-size:12px">${f.properties['1_tramo']||''}</div>`).addTo(map);
+}
+
+// ============================================
+// LEYENDA Y FILTROS
+// ============================================
+function renderLegend(obrasList){
+  const root = document.getElementById('legend-content');
+  root.innerHTML = obrasList.map((o,i)=>`
+    <div class="legend-row">
+      <input type="checkbox" class="legend-check" id="chk-obra-${i}" checked onchange="onLegendCheckboxChange(${i})">
+      <div class="legend-line" style="background:${o.color}"></div>
+      <span>${o.seccion}</span>
+    </div>
+  `).join('');
+}
+
+// Checkbox de la leyenda del mapa: sincroniza con timeline
+function onLegendCheckboxChange(idx) {
+  const chk = document.getElementById('chk-obra-' + idx);
+  const isChecked = chk.checked;
+
+  const tlChk = document.getElementById('tl-chk-' + idx);
+  if (tlChk) tlChk.checked = isChecked;
+
+  const item = document.getElementById('tl-legend-item-' + idx);
+  if (isChecked) {
+    item.classList.remove('disabled');
+  } else {
+    item.classList.add('disabled');
+  }
+
+  updateVisibilityState();
+}
+
+// Función centralizada de visibilidad
+function updateVisibilityState() {
+  if (!geojsonObras) return;
+
+  const obrasList = extractObrasList();
+  g_visibleSections = new Set();
+
+  obrasList.forEach((o, i) => {
+    const chk = document.getElementById('chk-obra-' + i);
+    if (chk && chk.checked) {
+      g_visibleSections.add(norm(o.seccion));
+    }
+  });
+
+  applyFilters();
+}
+
+function applyFilters(){
+  if(!geojsonObras) return;
+  const val = parseInt(document.getElementById('timeline-slider').value);
+  const sel = new Date(TL_START);
+  sel.setDate(TL_START.getDate() + val);
+
+  updateTimelineBars(sel);
+
+  const obrasList = extractObrasList();
+
+  // 1. Filtrar las líneas del mapa principal (por fecha Y por selección en leyenda)
+  const filtered = geojsonObras.features.filter(f=>{
+    const sec = f.properties['1_seccion'];
+    if(sec && !g_visibleSections.has(norm(sec))) return false;
+    const ini = parseDMY(f.properties['1_fecha_inicio']);
+    const fin = parseDMY(f.properties['1_fecha_fin']);
+    if(!ini || !fin) return true;
+    return sel >= ini && sel <= fin;
+  });
+
+  map.getSource('obras-src').setData({type:'FeatureCollection',features:filtered});
+
+  // 2. Obtener el conjunto de nombres de sección que están activas/visibles
+  const activeSections = new Set(
+    filtered.map(f => norm(f.properties['1_seccion'] || ''))
+  );
+
+  // 3. Vincular directamente los puntos de la CONFIG según la sección activa
+  CONFIG.puntos.forEach(p => {
+    const secPuntoNorm = norm(p.seccion || '');
+
+    const isVisible = Array.from(activeSections).some(activeSec => 
+      activeSec.includes(secPuntoNorm) || secPuntoNorm.includes(activeSec)
+    );
+
+    const vis = isVisible ? 'visible' : 'none';
+
+    if(map.getLayer('lyr-'+p.id+'-pt')) map.setLayoutProperty('lyr-'+p.id+'-pt', 'visibility', vis);
+    if(map.getLayer('lyr-'+p.id+'-halo')) map.setLayoutProperty('lyr-'+p.id+'-halo', 'visibility', vis);
+    if(map.getLayer('lyr-'+p.id+'-select')) map.setLayoutProperty('lyr-'+p.id+'-select', 'visibility', vis);
+  });
+}
+
+// ============================================
+// ENCUADRE DE MAPA SOBRE PUNTOS
+// ============================================
+function fitMapToPuntos(puntosGeojsonList) {
+  const bounds = new maplibregl.LngLatBounds();
+  let hasCoords = false;
+
+  puntosGeojsonList.forEach(geojson => {
+    if (!geojson || !geojson.features) return;
+    geojson.features.forEach(f => {
+      const geom = f.geometry;
+      if (geom && geom.type === 'Point' && geom.coordinates) {
+        bounds.extend(geom.coordinates);
+        hasCoords = true;
+      }
+    });
+  });
+
+  if (hasCoords && !bounds.isEmpty()) {
+    map.fitBounds(bounds, { padding: 30, maxZoom: 18 });
+  }
+}
+
+// ============================================
+// INICIALIZACIÓN
+// ============================================
+map.on('load', async () => {
+  try {
+    const res = await fetch(CONFIG.obrasGeojson);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    geojsonObras = await res.json();
+  } catch(e) {
+    console.warn('Error cargando obras:', e);
+    geojsonObras = {type:'FeatureCollection',features:[]};
+  }
+
+  const obrasList = extractObrasList();
+  obrasList.forEach(o=>{ TRAMO_COLORS[o.seccion] = o.color; });
+
+  // Inicializar visibilidad global
+  obrasList.forEach(o => g_visibleSections.add(norm(o.seccion)));
+
+  renderLegend(obrasList);
+  renderTimeline(obrasList);
+  renderCalendar(currentCalView.getFullYear(), currentCalView.getMonth());
+
+  map.addSource('obras-src',{type:'geojson',data:geojsonObras});
+  map.addLayer({id:'obras-hitbox',type:'line',source:'obras-src',paint:{'line-width':18,'line-opacity':0}});
+
+  map.addLayer({id:'obras-base',type:'line',source:'obras-src',paint:{'line-color':'#0a0c10','line-width':6}});
+
+  const colorExpr = ['case'];
+  obrasList.forEach(o=>{
+    colorExpr.push(['==',['get','1_seccion'],o.seccion], o.color);
+    colorExpr.push(['==',['get','1_seccion'],o.seccion.normalize('NFD').replace(/[\u0300-\u036f]/g,'')], o.color);
+  });
+  colorExpr.push('#B0BEC5');
+
+  map.addLayer({id:'obras-line',type:'line',source:'obras-src',paint:{'line-color':colorExpr,'line-width':4}});
+
+  map.addLayer({id:'obras-label',type:'symbol',source:'obras-src',layout:{
+    'symbol-placement':'line','text-field':'{1_tramo}','text-size':10,'text-font':['Open Sans Regular'],
+    'text-keep-upright':true,'text-max-angle':40
+  },paint:{'text-color':'#ffffff','text-halo-color':'#0a0c10','text-halo-width':2}});
+
+  map.addLayer({id:'obras-highlight',type:'line',source:'obras-src',filter:['==',['get','1_seccion'],''],
+    paint:{'line-color':'#ffd166','line-width':7,'line-opacity':0.8}});
+
+  const fetchedPuntosData = [];
+
+  const radiusExpr = [
+    'interpolate', ['linear'], ['zoom'],
+    10, 3,
+    14, 5.5,
+    18, 10
+  ];
+
+  for(const p of CONFIG.puntos){
+    try {
+      const res = await fetch(p.geojson);
+      if(!res.ok) continue;
+      const data = await res.json();
+      loadedPuntos[p.id] = {geojson:data, config:p};
+      fetchedPuntosData.push(data);
+
+      map.addSource('src-'+p.id,{type:'geojson',data});
+
+      map.addLayer({
+        id:'lyr-'+p.id+'-halo',
+        type:'circle',
+        source:'src-'+p.id,
+        paint:{
+          'circle-radius':['interpolate',['linear'],['zoom'],10,6,15,14],
+          'circle-color':p.color,
+          'circle-opacity':0.25
+        }
+      });
+
+      let strokeColorDark = '#1a3a5c';
+      if(p.color === '#4caf7c') strokeColorDark = '#1a3a5c';
+      if(p.color === '#e8913a') strokeColorDark = '#6b3c10';
+
+      map.addLayer({
+        id:'lyr-'+p.id+'-pt',
+        type:'circle',
+        source:'src-'+p.id,
+        paint:{
+          'circle-radius': radiusExpr,
+          'circle-color': p.color,
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': strokeColorDark
+        }
+      });
+
+      map.addLayer({
+        id:'lyr-'+p.id+'-select',
+        type:'circle',
+        source:'src-'+p.id,
+        filter:['==','imagen',''],
+        paint:{
+          'circle-radius': ['+', radiusExpr, 4],
+          'circle-color': 'transparent',
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#ffd166'
+        }
+      });
+
+      map.on('click','lyr-'+p.id+'-pt',(e)=>{
+        const f=e.features[0], props=f.properties, coords=f.geometry.coordinates;
+        const fechaGPX = props.hora_gpx || props.fecha;
+
+        CONFIG.puntos.forEach(tp => {
+          if(map.getLayer('lyr-'+tp.id+'-select')) {
+            map.setFilter('lyr-'+tp.id+'-select', ['==', 'imagen', tp.id === p.id ? (props.imagen || '') : '']);
+          }
+        });
+
+        if(activePopup) activePopup.remove();
+        activePopup = new maplibregl.Popup({closeButton:true}).setLngLat(coords).setHTML(
+          `<div style="color:#111;font-weight:600">${p.nombre}</div><div style="color:#555;font-size:12px">Frame: ${props.imagen}</div><div style="color:#777;font-size:11px">${fmtDT(fechaGPX)}</div>`
+        ).addTo(map);
+        showPointInfo(props,coords,p);
+      });
+
+      map.on('mouseenter','lyr-'+p.id+'-pt',()=>map.getCanvas().style.cursor='pointer');
+      map.on('mouseleave','lyr-'+p.id+'-pt',()=>map.getCanvas().style.cursor='');
+    } catch(e) { console.warn('Error cargando puntos:',p.geojson,e); }
+  }
+
+  fitMapToPuntos(fetchedPuntosData);
+
+  map.on('click','obras-line',(e)=>{
+    const f=e.features[0], p=f.properties, c=e.lngLat;
+
+    const obrasList = extractObrasList();
+    const idx = obrasList.findIndex(o => norm(o.seccion) === norm(p['1_seccion'] || ''));
+    if (idx >= 0) selectSectionByIdx(idx);
+
+    if(activePopup) activePopup.remove();
+    activePopup = new maplibregl.Popup({closeButton:true}).setLngLat(c).setHTML(
+      `<div style="color:#111;font-weight:600">${p['1_seccion']||'Tramo'}</div><div style="color:#555;font-size:12px">${p['1_tramo']||''}</div>`
+    ).addTo(map);
+    showObraInfo(p);
+    loadStreetView(c.lng,c.lat);
+  });
+  map.on('mouseenter','obras-line',()=>map.getCanvas().style.cursor='pointer');
+  map.on('mouseleave','obras-line',()=>map.getCanvas().style.cursor='');
+
+  map.on('click',(e)=>{
+    const pts=map.queryRenderedFeatures(e.point,{layers:['obras-line','obras-hitbox']});
+    const ptl=['lyr-tramo_1-pt','lyr-tramo_2-pt','lyr-tramo_3-pt'].filter(l=>map.getLayer(l));
+    const pfs=ptl.length?map.queryRenderedFeatures(e.point,{layers:ptl}):[];
+    if(!pts.length&&!pfs.length){
+      if(activePopup) activePopup.remove();
+      clearInfo();
+      map.setFilter('obras-highlight',['==',['get','1_seccion'],'']);
+
+      CONFIG.puntos.forEach(tp => {
+        if(map.getLayer('lyr-'+tp.id+'-select')) {
+          map.setFilter('lyr-'+tp.id+'-select', ['==', 'imagen', '']);
+        }
+      });
+
+      g_selectedSection = null;
+      const obrasList = extractObrasList();
+      obrasList.forEach((o, i) => {
+        const bar = document.getElementById('tlbar-' + i);
+        const item = document.getElementById('tl-legend-item-' + i);
+        if (bar) bar.classList.remove('selected');
+        if (item) item.classList.remove('selected');
+      });
+    }
+  });
+
+  document.getElementById('timeline-slider').addEventListener('input',applyFilters);
+  applyFilters();
+});
+</script>
+</body>
+</html>
