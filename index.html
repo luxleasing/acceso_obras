@@ -996,11 +996,33 @@ map.on('load', async () => {
     18, 10
   ];
 
-  for(const p of CONFIG.puntos){
+for(const p of CONFIG.puntos){
     try {
       const res = await fetch(p.geojson);
       if(!res.ok) continue;
       const data = await res.json();
+
+      // [1] FILTRADO DINÁMICO: Verificar si la imagen existe en el servidor
+      if (data && data.features) {
+        const validFeatures = [];
+        for (const feature of data.features) {
+          const imgProp = feature.properties ? feature.properties.imagen : null;
+          if (imgProp) {
+            const imgPath = buildImagePath(p, imgProp);
+            try {
+              // Realizamos una petición liviana para comprobar existencia de la imagen
+              const checkImg = await fetch(imgPath, { method: 'HEAD' });
+              if (checkImg.ok) {
+                validFeatures.push(feature);
+              }
+            } catch (err) {
+              // Si falla la red o da 404, se ignora el punto
+            }
+          }
+        }
+        data.features = validFeatures; // Sobrescribimos solo con los puntos cuya imagen existe
+      }
+
       loadedPuntos[p.id] = {geojson:data, config:p};
       fetchedPuntosData.push(data);
 
@@ -1067,7 +1089,6 @@ map.on('load', async () => {
       map.on('mouseleave','lyr-'+p.id+'-pt',()=>map.getCanvas().style.cursor='');
     } catch(e) { console.warn('Error cargando puntos:',p.geojson,e); }
   }
-
   fitMapToPuntos(fetchedPuntosData);
 
   map.on('click','obras-line',(e)=>{
