@@ -15,22 +15,58 @@
 </head>
 <body>
   <header class="topbar">
-    <div>
+    <div class="topbar-left">
       <div class="eyebrow">LUXVISION · MAPEO MÓVIL</div>
       <h1>Acceso Este · Sección 1</h1>
     </div>
-    <div class="status"><span></span> VISOR DE TRAMO</div>
+    <div class="topbar-right">
+      <div class="date-chip" id="date-chip">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        <span id="date-text">—</span>
+      </div>
+      <button class="btn-refresh" id="btn-refresh" type="button">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        Actualizar
+      </button>
+    </div>
   </header>
 
   <main id="workspace">
     <section id="map-stage">
       <div id="map"></div>
 
-      <div class="map-badge">
-        <span class="line-sample"></span>
-        <span>Tramo relevado</span>
-        <span class="point-sample"></span>
-        <span>Fotogramas 360°</span>
+      <div class="map-legend" id="map-legend">
+        <button class="legend-toggle" id="legend-toggle" type="button" aria-label="Ver referencias">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span class="legend-toggle-label">Referencias</span>
+        </button>
+
+        <div class="legend-panel" id="legend-panel">
+          <div class="legend-head">
+            <span class="legend-title">Referencias</span>
+            <button class="legend-close" id="legend-close" type="button" aria-label="Cerrar">×</button>
+          </div>
+          <ul class="legend-list">
+            <li><span class="legend-swatch line-sample"></span><span class="legend-text">Tramo relevado</span></li>
+            <li><span class="legend-swatch point-sample"></span><span class="legend-text">Fotogramas 360°</span></li>
+            <li><span class="legend-swatch lamp-led-sample"></span><span class="legend-text">Luminaria LED</span></li>
+            <li><span class="legend-swatch lamp-sap-sample"></span><span class="legend-text">Luminaria Sodio</span></li>
+            <li><span class="legend-swatch lamp-otros-sample"></span><span class="legend-text">Luminaria Otros</span></li>
+          </ul>
+        </div>
       </div>
 
       <button id="basemap-toggle" type="button">
@@ -41,22 +77,6 @@
     <div id="resizer" title="Arrastrar para cambiar el ancho"></div>
 
     <aside id="sidebar">
-      <section class="viewer-card">
-        <div class="card-head">
-          <div>
-            <span class="card-kicker">REFERENCIA</span>
-            <h2>Google Street View</h2>
-          </div>
-          <a id="btn-sv-external" href="#" target="_blank" rel="noopener">Abrir ↗</a>
-        </div>
-        <div class="media-frame street-frame">
-          <iframe id="streetview-player" src="about:blank" allowfullscreen loading="lazy"></iframe>
-          <div class="empty-state" id="street-placeholder">
-            Seleccioná un fotograma en el mapa
-          </div>
-        </div>
-      </section>
-
       <section class="viewer-card viewer-card-360">
         <div class="card-head">
           <div>
@@ -76,15 +96,12 @@
   </main>
 
 <script>
-/*
-  VISOR SIMPLE DE UN SOLO TRAMO
-  Para cambiar de tramo, normalmente alcanza con editar estas cuatro líneas.
-*/
 const CONFIG = {
-  rutaGeojson: './RN_7_acceso_DPV_4326.geojson',
+  rutaGeojson: './RN_7_acceso_DPV_4326_2.geojson',
   seccion: 'Seccion 1',
   puntosGeojson: './TRAMO_000891_001132/tramo_1.geojson',
-  frames: './TRAMO_000891_001132/frames/'
+  frames: './TRAMO_000891_001132/frames/',
+  luminariasGeojson: './luminarias_ruta_7_3.geojson'
 };
 
 let pannellumViewer = null;
@@ -111,20 +128,40 @@ function fmtDT(v) {
       day:'2-digit', month:'2-digit', year:'numeric',
       hour:'2-digit', minute:'2-digit'
     });
-  } catch(e) {
-    return String(v);
-  }
+  } catch(e) { return String(v); }
+}
+
+function renderDateChip() {
+  const now = new Date();
+  const text = now.toLocaleDateString('es-AR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
+  document.getElementById('date-text').textContent =
+    text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function setupLegend() {
+  const legend = document.getElementById('map-legend');
+  const toggle = document.getElementById('legend-toggle');
+  const close  = document.getElementById('legend-close');
+  if (!legend || !toggle) return;
+
+  const isMobile = () => window.matchMedia('(max-width: 850px)').matches;
+  legend.classList.toggle('is-open', !isMobile());
+
+  toggle.addEventListener('click', () => legend.classList.toggle('is-open'));
+  close?.addEventListener('click', () => legend.classList.remove('is-open'));
+  window.addEventListener('resize', () => {
+    if (!isMobile()) legend.classList.add('is-open');
+  });
 }
 
 function buildImagePath(imageProp) {
   let base = (CONFIG.frames || '').replace(/\\/g, '/');
   let img = (imageProp || '').replace(/\\/g, '/');
-
   if (base && !base.endsWith('/')) base += '/';
-
   const baseParts = base.split('/').filter(Boolean);
   const imgParts = img.split('/').filter(Boolean);
-
   if (baseParts.length && imgParts.length &&
       baseParts[baseParts.length - 1] === imgParts[0]) {
     img = imgParts.slice(1).join('/');
@@ -168,21 +205,14 @@ document.getElementById('basemap-toggle').addEventListener('click', () => {
   document.getElementById('bm-label').textContent = currentBasemap === 'sat' ? 'Mapa' : 'Satélite';
 });
 
-function loadStreetView(lng, lat) {
-  document.getElementById('street-placeholder').style.display = 'none';
-  document.getElementById('streetview-player').src =
-    `https://maps.google.com/maps?q=&layer=c&cbll=${lat},${lng}&cbp=11,0,0,0,0&output=svembed`;
-  document.getElementById('btn-sv-external').href =
-    `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`;
-}
-
 function load360(props) {
   const imagePath = buildImagePath(props.imagen);
   const fecha = props.hora_gpx || props.fecha || '';
 
   document.getElementById('frame-placeholder').style.display = 'none';
-  document.getElementById('frame-meta').textContent =
-    [props.imagen, fmtDT(fecha)].filter(Boolean).join(' · ');
+  document.getElementById('frame-meta').innerHTML =
+    `<span class="meta-file">${props.imagen || ''}</span>` +
+    (fecha ? `<span class="meta-dot">·</span><span class="meta-date">${fmtDT(fecha)}</span>` : '');
 
   if (pannellumViewer) {
     try { pannellumViewer.destroy(); } catch(e) {}
@@ -193,129 +223,285 @@ function load360(props) {
     panorama: imagePath,
     autoLoad: true,
     showControls: true,
-    compass: false
+    compass: false,
+    error: () => {
+      // Si la imagen no existe, mostramos el placeholder con mensaje.
+      document.getElementById('frame-placeholder').style.display = 'flex';
+      document.getElementById('frame-placeholder').textContent =
+        'La imagen no está disponible para este fotograma.';
+    }
   });
 }
 
-function fitToData(route, points) {
+// Encuadre rápido y ceñido a la ruta
+function fitToRoute(route) {
   const bounds = new maplibregl.LngLatBounds();
   let has = false;
 
-  function addCoords(coords) {
+  const addCoords = (coords) => {
     if (!Array.isArray(coords)) return;
     if (typeof coords[0] === 'number' && typeof coords[1] === 'number') {
-      bounds.extend(coords);
-      has = true;
-      return;
+      bounds.extend(coords); has = true; return;
     }
     coords.forEach(addCoords);
-  }
+  };
 
   (route.features || []).forEach(f => addCoords(f.geometry && f.geometry.coordinates));
-  (points.features || []).forEach(f => addCoords(f.geometry && f.geometry.coordinates));
 
   if (has && !bounds.isEmpty()) {
-    map.fitBounds(bounds, {padding: 55, maxZoom: 17});
+    map.fitBounds(bounds, {
+      padding: 50,
+      maxZoom: 16,
+      duration: 0        // sin animación → aparece ya encuadrado
+    });
   }
 }
 
-map.on('load', async () => {
-  let route = {type:'FeatureCollection', features:[]};
-  let points = {type:'FeatureCollection', features:[]};
+function classifyLamp(props) {
+  const raw = (props.Luminaria ?? props.luminaria ?? '').toString().toUpperCase().trim();
+  if (!raw) return 'OTRO';
+  if (raw.includes('LED')) return 'LED';
+  if (raw.includes('SODIO') || raw === 'SAP' || raw.includes('SAP')) return 'SODIO';
+  return 'OTRO';
+}
 
-  try {
-    const r = await fetch(CONFIG.rutaGeojson);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const allRoute = await r.json();
-
-    route = {
-      type: 'FeatureCollection',
-      features: (allRoute.features || []).filter(f => {
-        if (!CONFIG.seccion) return true;
-        const sec = f.properties ? f.properties['1_seccion'] : '';
-        return norm(sec) === norm(CONFIG.seccion);
-      })
-    };
-  } catch(e) {
-    console.warn('No se pudo cargar el vector del tramo:', e);
-  }
-
-  try {
-    const r = await fetch(CONFIG.puntosGeojson);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const raw = await r.json();
-
-    // Solo conserva puntos que tienen un nombre de imagen.
-    points = {
-      type: 'FeatureCollection',
-      features: (raw.features || []).filter(f =>
-        f.geometry && f.geometry.type === 'Point' &&
-        f.properties && f.properties.imagen &&
-        String(f.properties.imagen).trim() !== ''
-      )
-    };
-  } catch(e) {
-    console.warn('No se pudieron cargar los puntos:', e);
-  }
-
-  map.addSource('route-src', {type:'geojson', data:route});
-  map.addLayer({
-    id:'route-shadow',
-    type:'line',
-    source:'route-src',
-    paint:{
-      'line-color':'#20282d',
-      'line-width':7,
-      'line-opacity':0.65
+// Carga TODO en paralelo, sin esperar verificaciones
+async function loadAll() {
+  const safeFetch = async (url) => {
+    try {
+      const r = await fetch(url, {cache:'no-store'});
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return await r.json();
+    } catch(e) {
+      console.warn('Fetch falló:', url, e);
+      return { type:'FeatureCollection', features: [] };
     }
-  });
+  };
+
+  const [routeRaw, pointsRaw, luminariasRaw] = await Promise.all([
+    safeFetch(CONFIG.rutaGeojson),
+    safeFetch(CONFIG.puntosGeojson),
+    safeFetch(CONFIG.luminariasGeojson)
+  ]);
+
+  const route = {
+    type: 'FeatureCollection',
+    features: (routeRaw.features || []).filter(f => {
+      if (!CONFIG.seccion) return true;
+      const sec = f.properties ? f.properties['1_seccion'] : '';
+      return norm(sec) === norm(CONFIG.seccion);
+    })
+  };
+
+  const points = {
+    type: 'FeatureCollection',
+    features: (pointsRaw.features || []).filter(f =>
+      f.geometry && f.geometry.type === 'Point' &&
+      f.properties && f.properties.imagen &&
+      String(f.properties.imagen).trim() !== ''
+    )
+  };
+
+  const luminarias = {
+    type: 'FeatureCollection',
+    features: (luminariasRaw.features || [])
+      .filter(f => f.geometry && (f.geometry.type === 'Point' || f.geometry.type === 'MultiPoint'))
+      .map(f => ({ ...f, properties: { ...(f.properties || {}), _cat: classifyLamp(f.properties || {}) } }))
+  };
+
+  return { route, points, luminarias };
+}
+
+function addRouteLayers(route) {
+  map.addSource('route-src', {type:'geojson', data:route});
+
+  // Borde negro fino
   map.addLayer({
-    id:'route-line',
+    id:'route-border',
     type:'line',
     source:'route-src',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint:{
-      'line-color':'#8297a3',
-      'line-width':4,
+      'line-color':'#0b1220',
+      'line-width':['interpolate',['linear'],['zoom'],
+        8, 2.4, 12, 4.2, 14, 6, 16, 8.5, 18, 12
+      ],
       'line-opacity':0.95
     }
   });
 
+  // Interior naranja
+  map.addLayer({
+    id:'route-line',
+    type:'line',
+    source:'route-src',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint:{
+      'line-color':'#ffb74d',
+      'line-width':['interpolate',['linear'],['zoom'],
+        8, 1.2, 12, 2.4, 14, 3.5, 16, 5.2, 18, 7.5
+      ],
+      'line-opacity':1
+    }
+  });
+}
+
+function addLuminariasLayers(luminarias) {
+  map.addSource('luminarias-source', { type: 'geojson', data: luminarias });
+
+  map.addLayer({
+    id: 'luminarias-halo',
+    type: 'circle',
+    source: 'luminarias-source',
+    paint: {
+      'circle-radius': ['interpolate',['linear'],['zoom'],10,6,14,9,18,13],
+      'circle-color': ['match', ['get','_cat'],
+        'LED', '#22eff6', 'SODIO', '#e2f916', '#e6b290'
+      ],
+      'circle-opacity': 0.18
+    }
+  });
+
+  map.addLayer({
+    id: 'luminarias-layer',
+    type: 'circle',
+    source: 'luminarias-source',
+    paint: {
+      'circle-color': ['match', ['get','_cat'],
+        'LED', '#22eff6', 'SODIO', '#e2f916', '#e6b290'
+      ],
+      'circle-radius': ['interpolate',['linear'],['zoom'],10,3.5,14,5,18,7.5],
+      'circle-stroke-width': 1,
+      'circle-stroke-color': '#0f172a'
+    }
+  });
+}
+
+// ─── FOTOGRAMAS COMO CUADRADOS BLANCO/NEGRO CON HALO ───
+function addFramesLayers(points) {
   map.addSource('frames-src', {type:'geojson', data:points});
+
+  // 1) Halo exterior (se ve SIEMPRE detrás)
   map.addLayer({
     id:'frames-halo',
     type:'circle',
     source:'frames-src',
     paint:{
-      'circle-radius':['interpolate',['linear'],['zoom'],10,5,15,10,18,14],
-      'circle-color':'#9eabb2',
-      'circle-opacity':0.16
+      'circle-radius':['interpolate',['linear'],['zoom'], 10, 8, 14, 12, 18, 16],
+      'circle-color':'#ffffff',
+      'circle-opacity':0.35,
+      'circle-blur':0.6
     }
   });
+
+  // 2) Sombra / anillo negro (borde exterior)
   map.addLayer({
-    id:'frames-points',
+    id:'frames-shadow',
     type:'circle',
     source:'frames-src',
     paint:{
-      'circle-radius':['interpolate',['linear'],['zoom'],10,2.5,14,4.5,18,7],
-      'circle-color':'#aab7bd',
-      'circle-stroke-width':1.2,
-      'circle-stroke-color':'#354047'
+      'circle-radius':['interpolate',['linear'],['zoom'], 10, 5.5, 14, 8, 18, 11],
+      'circle-color':'#000000',
+      'circle-opacity':1
     }
   });
+
+  // 3) Relleno blanco (cuadrado se simula con un círculo chico)
+  map.addLayer({
+    id:'frames-fill',
+    type:'circle',
+    source:'frames-src',
+    paint:{
+      'circle-radius':['interpolate',['linear'],['zoom'], 10, 3.5, 14, 5.5, 18, 8],
+      'circle-color':'#ffffff',
+      'circle-opacity':1
+    }
+  });
+
+  // 4) Núcleo negro (punto central)
+  map.addLayer({
+    id:'frames-core',
+    type:'circle',
+    source:'frames-src',
+    paint:{
+      'circle-radius':['interpolate',['linear'],['zoom'], 10, 1.8, 14, 2.6, 18, 3.8],
+      'circle-color':'#000000',
+      'circle-opacity':1
+    }
+  });
+
+  // 5) Anillo de selección (amarillo)
   map.addLayer({
     id:'frame-selected',
     type:'circle',
     source:'frames-src',
     filter:['==', ['get','imagen'], ''],
     paint:{
-      'circle-radius':['interpolate',['linear'],['zoom'],10,6,14,9,18,13],
+      'circle-radius':['interpolate',['linear'],['zoom'], 10, 9, 14, 13, 18, 18],
       'circle-color':'rgba(0,0,0,0)',
-      'circle-stroke-width':2.5,
-      'circle-stroke-color':'#d2c59d'
+      'circle-stroke-width':3,
+      'circle-stroke-color':'#ffeb3b'
     }
   });
+}
 
-  map.on('click', 'frames-points', e => {
+function popupLuminarias(layerId) {
+  map.on('click', layerId, e => {
+    const f = e.features[0];
+    const props = f.properties || {};
+    const coords = f.geometry.coordinates.slice();
+    const cat = props._cat || 'OTRO';
+
+    const pick = (...names) => {
+      for (const n of names) {
+        if (props[n] !== undefined && props[n] !== null && props[n] !== '') return props[n];
+      }
+      return '';
+    };
+
+    const soporte = pick('Soporte', 'soporte');
+    const alimentacion = pick('Alimentaci', 'Alimentacion', 'alimentacion', 'Alimentación');
+    const lat = pick('Latitud', 'latitud', 'lat');
+    const lng = pick('Longitud', 'longitud', 'lon', 'lng');
+
+    const row = (k, v) =>
+      `<div class="pop-row"><span class="pop-k">${k}</span><span class="pop-v">${v || '—'}</span></div>`;
+
+    const html =
+      `<div class="pop-head pop-${cat.toLowerCase()}">Luminaria ${cat}</div>` +
+      row('Soporte', soporte) +
+      row('Alimentación', alimentacion) +
+      row('Latitud', lat) +
+      row('Longitud', lng);
+
+    new maplibregl.Popup({closeButton:true, offset:10, className:'lux-popup'})
+      .setLngLat(coords)
+      .setHTML(html)
+      .addTo(map);
+  });
+  map.on('mouseenter', layerId, () => map.getCanvas().style.cursor = 'pointer');
+  map.on('mouseleave', layerId, () => map.getCanvas().style.cursor = '');
+}
+
+map.on('load', async () => {
+  renderDateChip();
+  setupLegend();
+
+  // Aseguramos dimensiones correctas antes del fitBounds
+  map.resize();
+
+  const { route, points, luminarias } = await loadAll();
+
+  addRouteLayers(route);
+  addLuminariasLayers(luminarias);
+  addFramesLayers(points);
+
+  // Encuadre inmediato, sin animación
+  fitToRoute(route);
+
+  popupLuminarias('luminarias-layer');
+
+  map.on('click', 'frames-fill', e => {
     const f = e.features[0];
     const props = f.properties || {};
     const coords = f.geometry.coordinates.slice();
@@ -324,22 +510,34 @@ map.on('load', async () => {
     map.setFilter('frame-selected', ['==', ['get','imagen'], selectedImage]);
 
     if (activePopup) activePopup.remove();
-    activePopup = new maplibregl.Popup({closeButton:false, offset:10})
+    activePopup = new maplibregl.Popup({closeButton:false, offset:18, className:'lux-popup'})
       .setLngLat(coords)
-      .setHTML(`<strong>Fotograma</strong><br>${selectedImage}`)
+      .setHTML(`<div class="pop-head pop-frame">Fotograma</div><div class="pop-row"><span class="pop-k">archivo</span><span class="pop-v">${selectedImage}</span></div>`)
       .addTo(map);
 
-    loadStreetView(coords[0], coords[1]);
     load360(props);
   });
 
-  map.on('mouseenter', 'frames-points', () => map.getCanvas().style.cursor = 'pointer');
-  map.on('mouseleave', 'frames-points', () => map.getCanvas().style.cursor = '');
-
-  fitToData(route, points);
+  map.on('mouseenter', 'frames-fill', () => map.getCanvas().style.cursor = 'pointer');
+  map.on('mouseleave', 'frames-fill', () => map.getCanvas().style.cursor = '');
 });
 
-// Panel lateral redimensionable
+document.getElementById('btn-refresh').addEventListener('click', async () => {
+  renderDateChip();
+  const btn = document.getElementById('btn-refresh');
+  btn.classList.add('spinning');
+
+  try {
+    const { route, points, luminarias } = await loadAll();
+    map.getSource('route-src')?.setData(route);
+    map.getSource('frames-src')?.setData(points);
+    map.getSource('luminarias-source')?.setData(luminarias);
+    fitToRoute(route);
+  } finally {
+    setTimeout(() => btn.classList.remove('spinning'), 600);
+  }
+});
+
 const resizer = document.getElementById('resizer');
 const sidebar = document.getElementById('sidebar');
 let resizing = false;
