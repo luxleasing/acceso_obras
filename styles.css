@@ -272,29 +272,113 @@ body.resizing { cursor: col-resize; user-select: none; }
 .pnlm-grab { cursor: grab; }
 .pnlm-grabbing { cursor: grabbing; }
 
+
 /* ─── RESPONSIVE ─── */
 @media (max-width: 850px) {
-  .topbar { height: 56px; padding: 0 12px; }
-  :root { --header-h: 56px; }
+  /* Permitir scroll vertical en toda la página */
+  html, body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: auto;
+    min-height: 100%;
+  }
 
-  .topbar h1 { font-size: 14px; }
+  .topbar {
+    height: auto;
+    min-height: 56px;
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  :root { --header-h: auto; }
+
+  .topbar-left { flex: 1 1 auto; min-width: 0; }
+  .topbar-right { flex: 0 0 auto; gap: 6px; }
+
+  .topbar h1 { font-size: 14px; margin-top: 2px; }
   .eyebrow { font-size: 9px; letter-spacing: 1px; }
-  .date-chip { font-size: 11px; padding: 6px 10px; }
-  .date-chip span { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
-  .btn-refresh { padding: 6px 10px; font-size: 11px; }
 
-  #workspace { flex-direction: column; overflow: auto; }
-  #map-stage { min-height: 55vh; }
+  .date-chip {
+    font-size: 11px;
+    padding: 6px 10px;
+    max-width: 160px;
+  }
+  .date-chip span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    max-width: 120px;
+  }
+
+  .btn-refresh {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  /* Workspace: columnas apiladas, altura automática */
+  #workspace {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  /* Mapa: alto fijo en vh, sin desborde */
+  #map-stage {
+    flex: 0 0 auto;
+    width: 100%;
+    height: 55vh;
+    min-height: 320px;
+    max-height: 520px;
+    min-width: 0;
+    position: relative;
+  }
+
+  #map { width: 100%; height: 100%; }
+
+  /* El resizer no aplica en mobile */
   #resizer { display: none; }
 
+  /* Sidebar: debajo del mapa, altura fija en vh, scroll horizontal interno no */
   #sidebar {
-    width: 100% !important; max-width: none; min-width: 0;
-    height: 45vh; flex-direction: row;
+    width: 100% !important;
+    max-width: none;
+    min-width: 0;
+    height: 50vh;
+    min-height: 300px;
+    flex-direction: column;
+    padding: 10px;
+    gap: 10px;
+    overflow: hidden;
   }
-  .viewer-card { flex: 1 !important; }
 
-  .legend-toggle { padding: 8px; gap: 0; }
+  .viewer-card-360 {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .media-frame {
+    min-height: 0;
+  }
+
+  /* Leyenda en mobile: botón chico arriba a la izquierda del mapa */
+  .legend-toggle {
+    padding: 8px;
+    gap: 0;
+  }
   .legend-toggle-label { display: none; }
   .map-legend.is-open .legend-head { display: flex; }
-  .legend-panel { max-width: calc(100vw - 40px); }
+  .legend-panel {
+    max-width: calc(100vw - 40px);
+  }
+
+  /* Botón basemap no se solape con el badge del mapa */
+  #basemap-toggle {
+    right: 10px;
+    bottom: 10px;
+    font-size: 10px;
+    padding: 6px 8px;
+  }
 }
